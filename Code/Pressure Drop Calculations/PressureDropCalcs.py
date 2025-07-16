@@ -7,15 +7,15 @@ from rocketcea.cea_obj_w_units import CEA_Obj
 
 
 #Initialise Values according to design
-channel_height = 1.5e-3 #Channel Height
-arc_angle = 3 #Arc Angle of Channel
-n = 48 #Number of Channels
-t_w = 1e-3 #Firewall Thickness
+Material = 'AlSi10Mg' #'Inconel', 'AlSi10Mg', 'ABD900'
+channel_height = 1.2e-3 #Channel Height
+arc_angle = 3.5 #Arc Angle of Channel
+n = 50 #Number of Channels
+t_w = 0.7e-3 #Firewall Thickness
 feed_press = 40e+5 #In Pa
-chamber_press = 30e+5 #In Pa
-ffr = 0.462 #Fuel mass flow rate (kg/s)
-fcp = 0.15 #Filmcooling percentage (kg/s)
-fuelp_dist = 125e-3 #Distance of fuel pipe from chamber centre
+ffr = 0.562 #Fuel mass flow rate (kg/s)
+fcp = 0.22 #Filmcooling percentage 
+fuelp_dist = 67e-3 #Distance of fuel pipe from chamber centre
 fuelp_d = 10e-3 #Diameter of fuel pipe
 
 
@@ -35,17 +35,26 @@ fuel = Fluid(FluidsList.Ethanol).with_state(Input.pressure(feed_press), Input.te
 rho = fuel.density #Density of Fuel
 mu = fuel.dynamic_viscosity #Dynamic Viscosity of Fuel
 
-
 #Accounting for Roughness effects
-v_roughness = 53e-6 #Vertical Resolution of Additive Manufacturing (for ABD-900)
-roughness = np.zeros_like(contour)
+match Material:
+    case 'Inconel':
+        Surf_roughness = np.array([54, 38, 12, 6, 5]) * 1e-6
+        manufacturing_angle = np.array([30, 45, 60, 75, 90]) * math.pi/180 
+    case 'AlSi10Mg': 
+        Surf_roughness = np.array([66, 56, 21, 12, 8]) * 1e-6
+        manufacturing_angle = np.array([30, 45, 60, 75, 90]) * math.pi/180 
+    case 'ABD900': 
+        Surf_roughness = np.array([54, 38, 12, 6, 5]) * 1e-6 *0.7 #ABD900 ~30% less rough than inconel. 
+        manufacturing_angle = np.array([30, 45, 60, 75, 90]) * math.pi/180
+    case _: print("Material does not match any of the cases.")
+
+
+angles = np.zeros_like(contour)
 for i in range(len(contour)):
     if i == 0: angle = 0
     elif i == len(contour): angle = 0
     else: angle = math.atan((contour[i]-contour[i-1])/(segment_heights[i] - segment_heights[i-1]))
-    h_roughness = v_roughness*math.tan(angle)/2
-    roughness[i] = v_roughness + h_roughness
-
+roughness = np.interp(angles, manufacturing_angle, Surf_roughness)
 
 #Solving for regenerative Cooling Channels First
 #Print Headers
