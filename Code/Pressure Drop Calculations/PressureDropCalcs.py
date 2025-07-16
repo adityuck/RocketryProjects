@@ -8,8 +8,8 @@ from rocketcea.cea_obj_w_units import CEA_Obj
 
 #Initialise Values according to design
 Material = 'AlSi10Mg' #'Inconel', 'AlSi10Mg', 'ABD900'
-channel_height = 1.2e-3 #Channel Height
-arc_angle = 3.5 #Arc Angle of Channel
+channel_height = 1.5e-3 #Channel Height
+arc_angle = 3.8 #Arc Angle of Channel
 n = 50 #Number of Channels
 t_w = 0.7e-3 #Firewall Thickness
 feed_press = 40e+5 #In Pa
@@ -55,6 +55,7 @@ for i in range(len(contour)):
     elif i == len(contour): angle = 0
     else: angle = math.atan((contour[i]-contour[i-1])/(segment_heights[i] - segment_heights[i-1]))
 roughness = np.interp(angles, manufacturing_angle, Surf_roughness)
+roughness = roughness*1.5 #Our prints seemed much rougher lmao
 
 #Solving for regenerative Cooling Channels First
 #Print Headers
