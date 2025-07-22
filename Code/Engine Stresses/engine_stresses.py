@@ -4,22 +4,24 @@ import re
 import pandas as pd
 from os import system
 import scipy as sp
+import os
 channel_arc_angle = None
 channel_width = None
 system('cls')
 
 ## Data input
 
-#material = 'Inconel718'
+# material = 'Inconel718'
 #material = '6082-T6'
+# material = 'AlSi10Mg'
 material = 'ABD900'
 
 # channel_dp = 40 # pressure difference across the firewall (bar) - assume to be constant
 channel_p = 40 # channel pressure (bar) - assume to be constant
 
-t_w = 1e-3 * 0.3 # wall thickness (m)
+t_w = 1e-3 * 0.8 # wall thickness (m)
 
-channel_arc_angle = 4 # deg
+channel_arc_angle = 3.8 # deg
 # channel_width = 1e-3 * 0.4 # m
 
 chamber_stagnation_temp = 2556.6400
@@ -48,7 +50,9 @@ columns = ['axial_pos', 'radius', 'conv_hf_coeff', 'q_conv', 'q_rad', 'q_total',
            'firewall_temp', 'coolant_wall_temp', 'coolant_temp', 'channel_pressure', 
            'coolant_velocity', 'coolant_density']
 
-with open('RPA_Thermals.txt', 'r', encoding="utf8") as input_file:
+base_path = os.path.dirname(__file__)
+file_path = os.path.join(base_path, 'RPA_Thermals.txt')
+with open(file_path, 'r', encoding="utf8") as input_file:
     lines = input_file.readlines()
 
 lines = lines[8:-1]

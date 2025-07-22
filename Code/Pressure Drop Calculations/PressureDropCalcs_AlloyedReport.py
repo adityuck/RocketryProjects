@@ -30,7 +30,7 @@ contour = np.loadtxt(file_path, skiprows=14, usecols=1)
 segment_heights = np.loadtxt(file_path, skiprows=14, usecols=0)
 segment_heights = segment_heights*10**-3
 contour = contour*10**-3 #Convert to meters
-
+contour = contour[::-1] #Go from Nozzle to Injector
 
 
 #Loads fuel properties
@@ -115,66 +115,18 @@ for a in range(len(Materials)):
         #Print properties for each segment
         # state = f"{i:>12}{Re:>20.2f}{fD:>10.2f}{fD * segment_length/Dh*dyn_head:>10.2f}{u1:>20.2f}{segment_length:>20.2e}{Dh:>20.2e}{dyn_head:>20.2e}"
         # print(state)
-    dPdict1[Material] = dP_array[:-1]
+    
+    plot_array = dP_array
+    plot_array = plot_array[-1:0:-1] #Arranges it from Injector to Nozzle for Plotting
 
-    # print('=' * len(header))
-    # print('\n'*1)
+    plt.plot(segment_heights[1:-1]*100, plot_array[1:]*1e-5, label=Material)
+    plt.title("Pressure Drop in Regenerative Cooling Channel", fontsize=16)
+    plt.xlabel("Axial Distance Along Chamber (mm)", fontsize=14)
+    plt.ylabel("Pressure Drop (bar)", fontsize=14)
+    plt.legend(prop={'size': 12})
+    plt.grid(True)
+    plt.tick_params(axis='both', which='major', labelsize=12)  # Increase tick label font size
 
 
-
-    #Now, solving for drop across Fuel Pipe
-
-    #Getting fuel-pipe contours:
-    offset = fuelp_dist - contour[0] 
-    fuelp_contour = np.zeros_like(contour)
-    for i in range(len(contour)): fuelp_contour[i] = contour[i] + offset
-    dP_f = 0
-    dPf_array = np.zeros_like(contour)
-    #Print Headers
-    # print('\n')
-    # print("ANALYSIS ACROSS FUEL INLET PIPE:\n")
-    # header = f"{'Segment':>12}{'Reynold Number':>20}{'fD':>10}{'dP':>10}{'Fuel Velocity' :>20}{'Segment Length':>20}{'Hydraulic Diameter':>20}{'Dynamic Head':>20}"
-    # print('=' * len(header))
-    # print(header)
-    # print('=' * len(header))
-    #Iterate over each contour segment
-
-    for i in range(len(fuelp_contour)-1):
-        mass_flow_rate = ffr*(1+fcp) #Total Mass Flow Rate
-        u1 = mass_flow_rate/(rho*(math.pi*fuelp_d**2/4)) #Velocity of flow
-        Re = rho*u1*fuelp_d/mu #Reynolds Number
-        fD = 0.25*(math.log10(roughness[i]/(3.7*fuelp_d) + (5.74/Re**0.9)))**-2 #Friction Factor for frictional effects through cylindrical channel
-        dyn_head = 0.5*rho*u1**2 #Dynamic head/pressure
-
-        #Discretized contour lengths
-        delx = (fuelp_contour[i+1]-fuelp_contour[i])
-        dely = segment_heights[i+1] -segment_heights[i]
-        segment_length = math.sqrt(delx**2 + dely**2)
-
-        dP_f += fD * segment_length/fuelp_d*dyn_head #Darcy-Weisbach Equation
-
-        if i == 0 or i ==len(contour-1):
-            dP_f += 0.8*dyn_head #Accounts for losses at edges of channel entrance/exit
-        
-        dPf_array[i] = dP_f
-
-      # state = f"{i:>12}{Re:>20.2f}{fD:>10.2f}{fD * segment_length/fuelp_d*dyn_head:>10.2f}{u1:>20.2f}{segment_length:>20.2e}{Dh:>20.2e}{dyn_head:>20.2e}"
-        # print(state)
-
-    dPdict2[Material] = dPf_array[:-1]
-    # print('=' * len(header))
-    # print('\n'*1)
-    # print(f"{'Total Pressure Drop Across Regen Channel:':<45} {dP:>10.2f} Pa = {dP * 1e-5:0.2f} Bar")
-    # print(f"{'Total Pressure Drop Across Fuel Inlet Pipe:':<45} {dP_f:>10.2f} Pa = {dP_f * 1e-5:0.2f} Bar")
-    # print(f"{'Total Pressure Drop:':<45} {dP_f +dP:>10.2f} Pa = {(dP_f+dP) * 1e-5:>0.2f} Bar")
-    # print(f"{'Total Channel Length:':<45} {L * 1000:>10.2f} mm\n")
-
-    plt.plot(segment_heights[:-1]*100, dPdict1[Material]*1e-5, label = Material)
-    plt.title("Pressure Drop in Regenerative Cooling Channel")
-    plt.legend()
-    plt.grid(1)
-    plt.xlabel("Axial Distance Along Chamber (mm)")
-    plt.ylabel("Pressure Drop (bar)")
-
-plt.plot(segment_heights * 100, contour * 25, linestyle="--", color="dimgray")
+plt.plot(segment_heights * 100, contour[::-1] * 25, linestyle="--", color="dimgray")
 plt.show()
