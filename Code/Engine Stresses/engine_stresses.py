@@ -13,20 +13,20 @@ system('cls')
 
 # material = 'Inconel718'
 #material = '6082-T6'
-# material = 'AlSi10Mg'
-material = 'ABD900'
+material = 'AlSi10Mg'
+# material = 'ABD900'
 
 # channel_dp = 40 # pressure difference across the firewall (bar) - assume to be constant
 channel_p = 40 # channel pressure (bar) - assume to be constant
 
-t_w = 1e-3 * 0.8 # wall thickness (m)
+t_w = 1e-3 * 1.5 # wall thickness (m)
 
 channel_arc_angle = 3.8 # deg
 # channel_width = 1e-3 * 0.4 # m
 
-chamber_stagnation_temp = 2556.6400
-pc = 30
-gamma = 1.2617
+chamber_stagnation_temp = 2903
+pc = 33.5
+gamma = 1.1674
 
 def machfunc(mach, r, throat_area, gamma):
     area_ratio = (np.pi*r**2) / throat_area
@@ -217,6 +217,7 @@ channel_width = set_channel_width(radius, t_w, channel_arc_angle, channel_width)
 ## Calculations
 tangential_thermal_stress = calc_tangential_thermal_stress(q_total, youngs_modulus, coeff_thermal_expansion, t_w, v, thermal_conductivity) # Pa
 longitudinal_thermal_stress = calc_longitudinal_thermal_stress(firewall_temp, coolant_wall_temp, youngs_modulus, coeff_thermal_expansion) # Pa
+dT = firewall_temp - coolant_wall_temp
 tangential_pressure_stress = calc_tangential_pressure_stress(t_w, channel_width, channel_dp) # Pa
 crit_long_buckling_stress = calc_crit_long_buckling_stress(radius, youngs_modulus, t_w, v) # Pa
 von_mises_stress = calc_von_mises_stress(tangential_thermal_stress, tangential_pressure_stress, longitudinal_thermal_stress) # MPa
@@ -245,58 +246,58 @@ for i in range(len(axial_pos)-1):
     dA = np.pi * (radius[i] + radius[i+1]) * np.sqrt((radius[i] - radius[i+1]) ** 2 + (axial_pos[i+1] - axial_pos[i]) ** 2) # mm^2
     totHeatFluxInt += q_total[i] * dA
 
-print(f'Total Heat Flux: {totHeatFluxInt/1e3:.1f} kW')
-print(f'Peak Heat Flux: {np.max(q_total)/1e3:.1f} kW/m^2')
-print(f'Coolant temperature rise: {np.max(coolant_temp) - np.min(coolant_temp):.1f} deg C')
-print(f'Min coolant density: {np.min(coolant_density):.1f} kg/m^3') # Useful to check if coolant is boiling in channels
+# print(f'Total Heat Flux: {totHeatFluxInt/1e3:.1f} kW')
+# print(f'Peak Heat Flux: {np.max(q_total)/1e3:.1f} kW/m^2')
+# print(f'Coolant temperature rise: {np.max(coolant_temp) - np.min(coolant_temp):.1f} deg C')
+# print(f'Min coolant density: {np.min(coolant_density):.1f} kg/m^3') # Useful to check if coolant is boiling in channels
 
-# Plots
-fig, ax = plt.subplots(2, 2, figsize=(15, 10), sharex=True)
-fig.suptitle(f"Engine Thermals - {material}")
-ax1 = ax[0,0]
-ax2 = ax1.twinx()
+# # Plots
+# fig, ax = plt.subplots(2, 2, figsize=(15, 10), sharex=True)
+# fig.suptitle(f"Engine Thermals - {material}")
+# ax1 = ax[0,0]
+# ax2 = ax1.twinx()
 
-ax1.plot(axial_pos*1e3, yield_strength*1e-6, color="tab:green", label="Yield Stress")
-ax1.plot(axial_pos*1e3, tangential_thermal_stress*1e-6, color="tab:pink", label="Tangential Thermal Stress")
-ax1.plot(axial_pos*1e3, longitudinal_thermal_stress*1e-6, color="tab:purple", label="Longitudinal Thermal Stress")
-ax1.plot(axial_pos*1e3, tangential_pressure_stress*1e-6, color="tab:orange", label="Tangential Pressure Stress")
-ax1.plot(axial_pos*1e3, von_mises_stress*1e-6, color="tab:red", label="Von Mises Stress")
-ax1.set_ylim(0, None)
+# ax1.plot(axial_pos*1e3, yield_strength*1e-6, color="tab:green", label="Yield Stress")
+# ax1.plot(axial_pos*1e3, tangential_thermal_stress*1e-6, color="tab:pink", label="Tangential Thermal Stress")
+# ax1.plot(axial_pos*1e3, longitudinal_thermal_stress*1e-6, color="tab:purple", label="Longitudinal Thermal Stress")
+# ax1.plot(axial_pos*1e3, tangential_pressure_stress*1e-6, color="tab:orange", label="Tangential Pressure Stress")
+# ax1.plot(axial_pos*1e3, von_mises_stress*1e-6, color="tab:red", label="Von Mises Stress")
+# ax1.set_ylim(0, None)
 
-ax2.plot(axial_pos*1e3, youngs_modulus*1e-9, color="tab:blue", label="Young's Modulus")
-ax2.set_ylabel("Modulus (GPa)", color="tab:blue")
-ax2.set_ylim(0, None)
+# ax2.plot(axial_pos*1e3, youngs_modulus*1e-9, color="tab:blue", label="Young's Modulus")
+# ax2.set_ylabel("Modulus (GPa)", color="tab:blue")
+# ax2.set_ylim(0, None)
 
-ax1.set_ylabel("Stress (MPa)")
-ax1.set_xlabel("Axial Distance From Throat (mm)")
-ax1.set_xlim(min_pos*1e3, max_pos*1e3)
-ax[0,0].grid()
+# ax1.set_ylabel("Stress (MPa)")
+# ax1.set_xlabel("Axial Distance From Throat (mm)")
+# ax1.set_xlim(min_pos*1e3, max_pos*1e3)
+# ax[0,0].grid()
 
-legend_lines = ax1.lines + ax2.lines
-legend_labels = [l.get_label() for l in legend_lines]
-ax1.legend(legend_lines, legend_labels, loc='center left')
+# legend_lines = ax1.lines + ax2.lines
+# legend_labels = [l.get_label() for l in legend_lines]
+# ax1.legend(legend_lines, legend_labels, loc='center left')
 
-ax3 = ax[1,0]
-ax4 = ax3.twinx()
+# ax3 = ax[1,0]
+# ax4 = ax3.twinx()
 
-ax3.plot(axial_pos*1e3, firewall_temp, label="Firewall Temp", color="tab:orange")
-ax3.plot(axial_pos*1e3, coolant_wall_temp, label='Coolant Wall Temp', color="tab:blue")
-ax3.plot(axial_pos*1e3, coolant_temp, label='Coolant Temp', color="tab:green")
+# ax3.plot(axial_pos*1e3, firewall_temp, label="Firewall Temp", color="tab:orange")
+# ax3.plot(axial_pos*1e3, coolant_wall_temp, label='Coolant Wall Temp', color="tab:blue")
+# ax3.plot(axial_pos*1e3, coolant_temp, label='Coolant Temp', color="tab:green")
 
-ax4.plot(axial_pos*1e3, q_total*1e-6, color="tab:red", label="Heat Flux")
-ax4.set_ylabel("Heat Flux (MW/m^2)", color="tab:red")
-ax4.set_ylim(0, None)
+# ax4.plot(axial_pos*1e3, q_total*1e-6, color="tab:red", label="Heat Flux")
+# ax4.set_ylabel("Heat Flux (MW/m^2)", color="tab:red")
+# ax4.set_ylim(0, None)
 
-ax3.set_ylabel("Temperature (K)")
-ax3.set_xlabel("Axial Distance From Throat (mm)")
-ax3.set_xlim(min_pos*1e3, max_pos*1e3)
-ax3.grid()
+# ax3.set_ylabel("Temperature (K)")
+# ax3.set_xlabel("Axial Distance From Throat (mm)")
+# ax3.set_xlim(min_pos*1e3, max_pos*1e3)
+# ax3.grid()
 
-legend_lines = ax3.lines + ax4.lines
-legend_labels = [l.get_label() for l in legend_lines]
-ax3.legend(legend_lines, legend_labels, loc='upper left')
+# legend_lines = ax3.lines + ax4.lines
+# legend_labels = [l.get_label() for l in legend_lines]
+# ax3.legend(legend_lines, legend_labels, loc='upper left')
 
-axial_pos_mm = axial_pos * 1e3
+# axial_pos_mm = axial_pos * 1e3
 
 ax5 = ax[0,1]
 ax6 = ax5.twinx()
