@@ -226,9 +226,6 @@ h = channel_height
 Dh = 2*h*w/(h+w) #Hydraulic Diameter
 
 # =========================[THERMAL CALCULATIONS]=========================
-
-
-
 qg_array  = np.zeros((len(contour) -1 ,1))
 twg_array = np.zeros_like(qg_array)
 twc_array = np.zeros_like(qg_array)
@@ -237,7 +234,7 @@ tc_array[0] = 300
 rev_contour = {'ax_pos' : x_full[::-1], 'radii' : y_full[::-1]}
 rev_Dh = Dh[::-1]
 rev_w = w[::-1]
-throat_idx = np.argmin(rev_contour)
+throat_idx = np.argmin(rev_contour['radii'])
 
 #Nozzle Exit Calculations
 T0 = ispObj.get_Tcomb(Pc=Pc_psia, MR=OF)
@@ -259,19 +256,22 @@ for i in range(throat_idx):
     fuel = Fluid(FluidsList.Ethanol).with_state(Input.pressure(Pc_SI + 10e+5), Input.temperature(Tc - 273.15)) # Fix Later to Use Pressure from Pressure drops
     sigma = 1 # Fix Later too
     rho = fuel.density #Density of Fuel
-    mu = fuel.dynamic_viscosity #Dynamic Viscosity of Fuel
-    u1 = fuel_mdot/(rho*h*w[i]) #Velocity of flow
-    dh = Dh[i]
-    Re = rho*u1*dh/mu #Reynolds Number 
+    mu_f = fuel.dynamic_viscosity #Dynamic Viscosity of Fuel
+    u1 = fuel_mdot/(n*rho*h*rev_w[i]) #Velocity of flow
+    dh = rev_Dh[i]
+    Re = rho*u1*dh/mu_f #Reynolds Number 
     lambda_c = fuel.conductivity
     
     alpha_T = 0.026 * Dt**-0.2 * mu **0.2 * cp * Pr **0.6 *  (Pc_SI/c_star)**0.8 * (Dt/Radius)**0.1 * (At_SI/Area) **0.9 * sigma
-    M = ispObj.get_MachNumber(Pc=Pc_psia, MR=OF, fac_CR=Area/At_SI)
+    M = M = ispObj.get_MachNumber(Pc=Pc_psia, MR=OF, eps=Area/At_SI)
     Te = T0 * ( 1 + (gamma-1)*M**2*Pr**0.33/2)  /  ( 1 + (gamma-1)*M**2/2)
     Twg_0 = Te - 50
     qg = alpha_T * (Te - Twg_0)
-    Nu = 0.023* Re**0.8 * Pr ** 0.4
+    cp_c = fuel.specific_heat
+    Pr_c = cp_c * mu_f / lambda_c
+    Nu   = 0.023 * (Re**0.8) * (Pr_c**0.4)     
     alpha_c = Nu * lambda_c / dh
+    
     Twc = qg / alpha_c + Tc
     if isinstance(conductivity, np.ndarray):
         lambda_w = np.interp((Twg_0+Twc)/2, conductivity_temps, conductivity)
@@ -319,10 +319,10 @@ for i in range(throat_idx, len(rev_contour['radii']) - 1):
     fuel = Fluid(FluidsList.Ethanol).with_state(Input.pressure(Pc_SI + 10e+5), Input.temperature(Tc - 273.15)) # Fix Later to Use Pressure from Pressure drops
     sigma = 1 # Fix Later too
     rho = fuel.density #Density of Fuel
-    mu = fuel.dynamic_viscosity #Dynamic Viscosity of Fuel
-    u1 = fuel_mdot/(rho*h*w[i]) #Velocity of flow
-    dh = Dh[i]
-    Re = rho*u1*dh/mu #Reynolds Number 
+    mu_f = fuel.dynamic_viscosity #Dynamic Viscosity of Fuel
+    u1 = fuel_mdot/(n*rho*h*rev_w[i]) #Velocity of flow
+    dh = rev_Dh[i]
+    Re = rho*u1*dh/mu_f #Reynolds Number 
     lambda_c = fuel.conductivity
     
     alpha_T = 0.026 * Dt**-0.2 * mu **0.2 * cp * Pr **0.6 *  (Pc_SI/c_star)**0.8 * (Dt/Radius)**0.1 * (At_SI/Area) **0.9 * sigma
@@ -330,7 +330,10 @@ for i in range(throat_idx, len(rev_contour['radii']) - 1):
     Te = T0 * ( 1 + (gamma-1)*M**2*Pr**0.33/2)  /  ( 1 + (gamma-1)*M**2/2)
     Twg_0 = Te - 50
     qg = alpha_T * (Te - Twg_0)
-    Nu = 0.023* Re**0.8 * Pr ** 0.4
+    cp_c = fuel.specific_heat
+    Pr_c = cp_c * mu_f / lambda_c
+    Nu   = 0.023 * (Re**0.8) * (Pr_c**0.4)       # ✅
+    alpha_c = Nu * lambda_c / dh
     alpha_c = Nu * lambda_c / dh
     Twc = qg / alpha_c + Tc
     if isinstance(conductivity, np.ndarray):
